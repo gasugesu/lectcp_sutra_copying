@@ -1,6 +1,11 @@
 package net
 
-import "sync"
+import (
+	"fmt"
+	"io"
+	"log"
+	"sync"
+)
 
 type LinkDeviceCallbackHandler func(link LinkDevice, protocol EthernetType, payload []byte, src, dst HardwareAddress)
 
@@ -23,4 +28,91 @@ type Device struct {
 	errors chan error
 	ifaces []ProtocolInterface
 	sync.RWMutex
+}
+
+var devices = sync.Map{}
+
+func RegisterDevice(link LinkDevice) (*Device, error) {
+	if _, exists := devices.Load(link); exists {
+		return nil, fmt.Errorf("link device '%s' is already registerd", link.Name())
+	}
+	dev := &Device{
+		LinkDevice: link,
+		errors:     make(chan error),
+	}
+	// launch rx loop
+	go func() {
+		var buf = make([]byte, dev.HeaderSize()+dev.MTU())
+		for {
+			n, err := dev.Read(buf)
+			if n > 0 {
+				dev.RxHandler(buf[:n], rxHandler)
+			}
+			if err != nil {
+				dev.errors <- err
+				break
+			}
+		}
+		close(dev.errors)
+	}()
+	devices.Store(link, dev)
+	return dev, nil
+}
+
+func rxHandler(link LinkDevice, protocol EthernetType, payload []byte, src, dst HardwareAddress) {
+	protocols.Range(func(k, v interface{}) bool {
+		var (
+			Type  = k.(EthernetType)
+			entry = v.(*entry)
+		)
+		if Type == EthernetType(protocol) {
+			dev, ok := devices.Load(link)
+			if !ok {
+				panic("device not founc")
+			}
+			entry.rxQueue <- &packet{
+				dev:  dev.(*Device),
+				data: payload,
+				src:  src,
+				dst:  dst,
+			}
+			return false
+		}
+		return true
+	})
+}
+
+func Devices() []*Device {
+	ret := []*Device{}
+	devices.Range(func(_, v interface{}) bool {
+		ret = append(ret, v.(*Device))
+		return true
+	})
+	return ret
+}
+
+func (d *Device) Interfaces() []ProtocolInterface {
+	d.RLock()
+	defer d.RUnlock()
+	ret := make([]ProtocolInterface, len(d.ifaces))
+	for i, iface := range d.ifaces {
+		ret[i] = iface
+	}
+	return ret
+}
+
+func (d *Device) Shutdown() {
+	d.LinkDevice.Close()
+	if err := <-d.errors; err != nil {
+		if err != io.EOF {
+			log.Println(err)
+		}
+	}
+	devices.Delete(d.LinkDevice)
+}
+
+func (d *Device) RegisterDevice(iface ProtocolInterface) {
+	d.Lock()
+	defer d.Unlock()
+	d.ifaces = append(d.ifaces, iface)
 }
