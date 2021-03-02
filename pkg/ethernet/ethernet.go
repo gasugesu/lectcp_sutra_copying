@@ -3,6 +3,7 @@ package ethernet
 import (
 	"bytes"
 	"encoding/binary"
+	"fmt"
 	"log"
 
 	"github.com/gasugesu/lectcp/pkg/net"
@@ -25,6 +26,19 @@ type Device struct {
 }
 
 var _ net.LinkDevice = &Device{} // interface check
+
+func NewDevice(raw raw.Device) (*Device, error) {
+	if raw == nil {
+		return nil, fmt.Errorf("raw device is required")
+	}
+	addr := Address{}
+	copy(addr[:], raw.Address())
+	return &Device{
+		raw:  raw,
+		addr: addr,
+		mtu:  maxPayloadSize,
+	}, nil
+}
 
 func (d *Device) Address() net.HardwareAddress {
 	return d.addr
@@ -58,7 +72,6 @@ func (d *Device) Read(buf []byte) (int, error) {
 	return d.raw.Read(buf)
 }
 
-
 func (d *Device) RxHandler(data []byte, callback net.LinkDeviceCallbackHandler) {
 	f, err := parse(data)
 	if err != nil {
@@ -82,6 +95,10 @@ func (d *Device) RxHandler(data []byte, callback net.LinkDeviceCallbackHandler) 
 	callback(d, f.Type, f.payload, f.Src, f.Dst)
 }
 
+func (d *Device) SetAddress(addr Address) {
+	d.addr = addr
+}
+
 func (d *Device) Tx(Type net.EthernetType, data, dst []byte) error {
 	hdr := header{
 		Dst:  NewAddress(dst),
@@ -98,6 +115,6 @@ func (d *Device) Tx(Type net.EthernetType, data, dst []byte) error {
 	return err
 }
 
-func (d *Device) Type() net.HardwareType{
+func (d *Device) Type() net.HardwareType {
 	return net.HardwareTypeEthernet
 }
