@@ -50,6 +50,9 @@ func main() {
 	case s := <-sig:
 		fmt.Printf("sig: %s\n", s)
 		dev.Shutdown()
+	// TODO: create PR
+	case err = <-dev.Errors:
+		dev.Shutdown()
 	}
 	fmt.Println("good bye")
 }
