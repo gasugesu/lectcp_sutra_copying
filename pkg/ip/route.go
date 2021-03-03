@@ -49,7 +49,7 @@ func (tbl *routeTable) lookup(iface *Interface, dst Address) *routeEntry {
 	tbl.mutex.RLock()
 	defer tbl.mutex.RUnlock()
 	for _, entry := range tbl.storage {
-		if dst.Uint32()&entry.netmask.Uint32() == entry.netmask.Uint32() && (iface == nil || entry.iface == iface) {
+		if dst.Uint32()&entry.netmask.Uint32() == entry.network.Uint32() && (iface == nil || entry.iface == iface) {
 			if candidate == nil || ntoh32(candidate.netmask.Bytes()) < ntoh32(entry.netmask.Bytes()) {
 				candidate = entry
 			}
