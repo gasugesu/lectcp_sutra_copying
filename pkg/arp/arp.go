@@ -18,6 +18,10 @@ func init() {
 	net.RegisterProtocol(net.EthernetTypeARP, rxHandler)
 }
 
+func Init() {
+	// do nothing
+}
+
 func rxHandler(dev *net.Device, data []byte, src, dst net.HardwareAddress) error {
 	msg, err := parse(data)
 	if err != nil {
