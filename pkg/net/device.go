@@ -115,7 +115,7 @@ func (d *Device) Shutdown() {
 	devices.Delete(d.LinkDevice)
 }
 
-func (d *Device) RegisterDevice(iface ProtocolInterface) {
+func (d *Device) RegisterInterface(iface ProtocolInterface) {
 	d.Lock()
 	defer d.Unlock()
 	d.ifaces = append(d.ifaces, iface)
