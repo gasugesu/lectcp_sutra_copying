@@ -6,7 +6,7 @@ import (
 )
 
 func init() {
-	ip.RegisterProtocol(net.ProtocolNumberICPM, rxHandler)
+	ip.RegisterProtocol(net.ProtocolNumberICMP, rxHandler)
 }
 
 func Init(){
@@ -39,7 +39,7 @@ func tx(iface net.ProtocolInterface, msg message, dst net.ProtocolAddress) error
 	if err != nil {
 		return err
 	}
-	return iface.Tx(net.ProtocolNumberICPM, buf, dst)
+	return iface.Tx(net.ProtocolNumberICMP, buf, dst)
 }
 
 func EchoRequest(data []byte, dst net.ProtocolAddress) error {

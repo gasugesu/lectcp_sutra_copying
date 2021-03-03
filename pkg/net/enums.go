@@ -3,7 +3,7 @@ package net
 type HardwareType uint16
 
 const (
-	HardwareLoopback     = 0x0000
+	HardwareTypeLoopback = 0x0000
 	HardwareTypeEthernet = 0x0001
 )
 
@@ -31,12 +31,12 @@ func (t EthernetType) String() string {
 type ProtocolNumber uint8
 
 const (
-	ProtocolNumberICPM ProtocolNumber = 0x01
+	ProtocolNumberICMP ProtocolNumber = 0x01
 )
 
 func (t ProtocolNumber) String() string {
 	switch t {
-	case ProtocolNumberICPM:
+	case ProtocolNumberICMP:
 		return "ICMP"
 	default:
 		return "Unknown"
